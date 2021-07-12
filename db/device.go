@@ -1,58 +1,85 @@
-package entities
+package db
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
-	"github.com/go-redis/redis"
+	uuid "github.com/satori/go.uuid"
 )
 
-type Device struct {
-	id    int
-	Name  string
-	Model string
-}
-
-func NewDevice(id int, param ...string) *Device {
-	var dev = new(Device)
-	dev.id = id
-	if len(param) > 0 {
-		dev.Name = param[0]
-		dev.Model = param[1]
+type (
+	Device struct {
+		Name  string
+		Model string
 	}
-	return dev
+
+	Devices interface {
+		Add(*Device) (string, error)
+		Read(string) (Device, error)
+		Update(string, *Device) error
+		Delete(string) error
+		List() ([]Device, error)
+	}
+
+	devicesManager struct {
+		db DataBase
+	}
+)
+
+func NewDevices(db DataBase) Devices {
+	return &devicesManager{db: db}
 }
 
-func (dev Device) Create(cli *redis.Client) (err error) {
-	json, err := json.Marshal(dev)
+func (dm *devicesManager) Add(dvc *Device) (string, error) {
+	json, err := json.Marshal(dvc)
+	if err != nil {
+		return "", err
+	}
+	var key = fmt.Sprint(uuid.NewV4())
+	err = dm.db.cli.Set(fmt.Sprintf("devices:%v", key), json, 0).Err()
+	return key, err
+}
+
+func (dm *devicesManager) Read(key string) (dvc Device, err error) {
+	val, err := dm.db.cli.Get(fmt.Sprintf("devices:%v", key)).Result()
+	if err != nil {
+		return Device{}, err
+	}
+
+	err = json.Unmarshal([]byte(val), &dvc)
+	return dvc, err
+}
+
+func (dm *devicesManager) Update(key string, dvc *Device) error {
+	json, err := json.Marshal(dvc)
 	if err != nil {
 		return err
 	}
-
-	err = cli.Set(fmt.Sprintf("devices:%v", dev.id), json, 0).Err()
+	err = dm.db.cli.Set(fmt.Sprintf("devices:%v", key), json, 0).Err()
 	return err
 }
 
-func (dev Device) Update(cli *redis.Client) (err error) {
-	return dev.Create(cli)
+func (dm *devicesManager) Delete(key string) error {
+	return dm.db.cli.Del("devices:" + key).Err()
 }
 
-func (dev Device) Delete(cli *redis.Client) (err error) {
-	return nil
-}
-
-func (dev *Device) Read(cli *redis.Client) (err error) {
-	val, err := cli.Get(fmt.Sprintf("devices:%v", dev.id)).Result()
-	switch err {
-	case redis.Nil:
-		return errors.New("such device not exist yet")
-	case nil:
-		break
-	default:
-		return err
+func (dm *devicesManager) List() ([]Device, error) {
+	var keys, _, err = dm.db.cli.Scan(0, "devices:*", 0).Result()
+	if err != nil {
+		return []Device{}, err
 	}
-
-	err = json.Unmarshal([]byte(val), dev)
-	return err
+	arr, err := dm.db.cli.MGet(keys...).Result()
+	if err != nil {
+		return []Device{}, err
+	}
+	var ret = []Device{}
+	for _, elem := range arr {
+		var dvc Device
+		err = json.Unmarshal([]byte(elem.(string)), &dvc)
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, dvc)
+	}
+	return ret, err
 }
