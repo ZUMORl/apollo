@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -18,7 +19,7 @@ type (
 		Read(string) (Device, error)
 		Update(string, *Device) error
 		Delete(string) error
-		List() ([]Device, error)
+		List() ([]string, []Device, error)
 	}
 
 	devicesManager struct {
@@ -63,23 +64,28 @@ func (dm *devicesManager) Delete(key string) error {
 	return dm.db.cli.Del("devices:" + key).Err()
 }
 
-func (dm *devicesManager) List() ([]Device, error) {
+func (dm *devicesManager) List() ([]string, []Device, error) {
 	var keys, _, err = dm.db.cli.Scan(0, "devices:*", 0).Result()
 	if err != nil {
-		return []Device{}, err
+		return []string{}, []Device{}, err
 	}
 	arr, err := dm.db.cli.MGet(keys...).Result()
 	if err != nil {
-		return []Device{}, err
+		return []string{}, []Device{}, err
 	}
-	var ret = []Device{}
-	for _, elem := range arr {
+
+	var devices []Device
+	var ids []string
+
+	for i, elem := range arr {
 		var dvc Device
 		err = json.Unmarshal([]byte(elem.(string)), &dvc)
 		if err != nil {
-			return ret, err
+			return ids, devices, err
 		}
-		ret = append(ret, dvc)
+
+		ids = append(ids, strings.Split(keys[i], ":")[1])
+		devices = append(devices, dvc)
 	}
-	return ret, err
+	return ids, devices, err
 }

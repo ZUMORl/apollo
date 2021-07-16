@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -18,7 +19,7 @@ type (
 		Read(string, string) (Sensor, error)
 		Update(string, string, *Sensor) error
 		Delete(string, string) error
-		ListByDevice(string) ([]Sensor, error)
+		ListByDevice(string) ([]string, []Sensor, error)
 	}
 
 	sensorManager struct {
@@ -65,23 +66,28 @@ func (sm *sensorManager) Delete(key, dvc string) error {
 	return sm.db.cli.Del(fmt.Sprintf("sensors:%v:device:%v", key, dvc)).Err()
 }
 
-func (sm *sensorManager) ListByDevice(dvc string) ([]Sensor, error) {
-	var keys, _, err = sm.db.cli.Scan(0, "sensors:*:"+dvc, 0).Result()
+func (sm *sensorManager) ListByDevice(dvc string) ([]string, []Sensor, error) {
+	var keys, _, err = sm.db.cli.Scan(0, "sensors:*:device:"+dvc, 0).Result()
 	if err != nil {
-		return []Sensor{}, err
+		return []string{}, []Sensor{}, err
 	}
 	arr, err := sm.db.cli.MGet(keys...).Result()
 	if err != nil {
-		return []Sensor{}, err
+		return []string{}, []Sensor{}, err
 	}
-	var ret = []Sensor{}
-	for _, elem := range arr {
+
+	var sensors []Sensor
+	var ids []string
+
+	for i, elem := range arr {
 		var sns Sensor
 		err = json.Unmarshal([]byte(elem.(string)), &sns)
 		if err != nil {
-			return ret, err
+			return ids, sensors, err
 		}
-		ret = append(ret, sns)
+
+		ids = append(ids, strings.Split(keys[i], ":")[1])
+		sensors = append(sensors, sns)
 	}
-	return ret, err
+	return ids, sensors, err
 }

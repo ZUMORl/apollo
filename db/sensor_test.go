@@ -150,7 +150,7 @@ func TestListSensors(t *testing.T) {
 	}
 
 	var sensors = NewSensors(Db)
-	var arr, err = sensors.ListByDevice(dvc_key)
+	var keys, arr, err = sensors.ListByDevice(dvc_key)
 	if err != nil {
 		t.Fatalf("Failed List : %v", err)
 	}
@@ -158,8 +158,12 @@ func TestListSensors(t *testing.T) {
 	sort.Slice(arr, func(i, j int) bool {
 		return arr[i].Type < arr[j].Type
 	})
+	sort.Strings(keys)
 
 	for i := range arr {
+		var get_result, _ = sensors.Read(keys[i], dvc_key)
+		assertEqual(t, get_result, tst_arr[i],
+			fmt.Sprintf("Key and value do not correspond for key %v", keys[i]))
 		assertEqual(t, arr[i], tst_arr[i],
 			fmt.Sprintf("Elements %v are not equal\n%v != %v",
 				i, arr[i], tst_arr[i]))
