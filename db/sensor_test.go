@@ -35,27 +35,27 @@ func TestSensorComplex(t *testing.T) {
 		t.Fatalf("Addition fail : %v", err)
 	}
 
-	sns, err := sensors.Read(id, dvcId)
+	sns, err := sensors.Read(id)
 	if err != nil {
 		t.Fatalf("Read fail : %v", err)
 	}
 	assertEqual(t, sns, snsStart, "")
 
-	if err := sensors.Update(id, dvcId, &snsChanged); err != nil {
+	if err := sensors.Update(id, &snsChanged); err != nil {
 		t.Fatalf("Update fail : %v", err)
 	}
 
-	sns, err = sensors.Read(id, dvcId)
+	sns, err = sensors.Read(id)
 	if err != nil {
 		t.Fatalf("Read fail : %v", err)
 	}
 	assertEqual(t, sns, snsChanged, "")
 
-	if err := sensors.Delete(id, dvcId); err != nil {
+	if err := sensors.Delete(id); err != nil {
 		t.Fatalf("Deletion fail : %v", err)
 	}
 
-	if _, err := sensors.Read(id, dvcId); err == nil {
+	if _, err := sensors.Read(id); err == nil {
 		t.Fatal("Key still exist")
 	}
 }
@@ -96,7 +96,7 @@ func TestListSensors(t *testing.T) {
 	}
 
 	for _, id := range ids {
-		if err := sensors.Delete(id, dvcId); err != nil {
+		if err := sensors.Delete(id); err != nil {
 			t.Fatalf("Deletion fail : %v", err)
 		}
 	}
