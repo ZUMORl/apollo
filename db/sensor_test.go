@@ -1,156 +1,83 @@
 package db
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"testing"
 )
 
 const (
-	sns_type  = "light"
-	sns_model = "model1"
-	dvc_key   = "1337"
+	sensorType  = "light"
+	sensorModel = "model1"
+	dvcId       = "1337"
 )
 
-func TestCreteSensor(t *testing.T) {
-	var json = fmt.Sprintf("{\"Type\":\"%v\",\"Model\":\"%v\"}", sns_type, sns_model)
-
-	ping(t)
-	var sensors = NewSensors(Db)
-
-	var key, err = sensors.Add(&Sensor{Type: sns_type, Model: sns_model}, dvc_key)
-	if err != nil {
-		t.Fatalf("Addition failed : %v", err)
+func compareSlices(a []string, b []string) bool {
+	if len(a) != len(b) {
+		return false
 	}
-
-	var tst_key = "sensors:" + key + ":device:" + dvc_key
-	var val = get(t, tst_key)
-	assertEqual(t, val, json, "")
-
-	delete(t, tst_key)
-}
-
-func TestReadSensor(t *testing.T) {
-	var tst_id = "384"
-	var json = fmt.Sprintf("{\"Type\":\"%v\",\"Model\":\"%v\"}", sns_type, sns_model)
-	var tst_key = "sensors:" + tst_id + ":device:" + dvc_key
-
-	ping(t)
-	var sensors = NewSensors(Db)
-
-	set(t, tst_key, json)
-
-	var sns, err = sensors.Read(tst_id, dvc_key)
-	if err != nil {
-		t.Fatalf("Failed read : %v", err)
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
 	}
-
-	assertEqual(t, sns.Type, sns_type, "")
-	assertEqual(t, sns.Model, sns_model, "")
-
-	delete(t, tst_key)
-}
-
-func TestUpdateSensor(t *testing.T) {
-	var tst_id = "384"
-	var sns_type_ch = "Changed Type"
-	var sns_model_ch = "Changed Model"
-	var json = fmt.Sprintf("{\"Type\":\"%v\",\"Model\":\"%v\"}", sns_type, sns_model)
-	var exp_json = fmt.Sprintf("{\"Type\":\"%v\",\"Model\":\"%v\"}", sns_type_ch, sns_model_ch)
-	var tst_key = "sensors:" + tst_id + ":device:" + dvc_key
-
-	ping(t)
-	var sensors = NewSensors(Db)
-
-	set(t, tst_key, json)
-
-	if err := sensors.Update(tst_id, dvc_key, &Sensor{Type: sns_type_ch, Model: sns_model_ch}); err != nil {
-		t.Fatalf("Failed update : %v", err)
-	}
-
-	var val = get(t, tst_key)
-	assertEqual(t, val, exp_json, "")
-
-	delete(t, tst_key)
-}
-
-func TestDeleteSensor(t *testing.T) {
-	var tst_id = "384"
-	var json = fmt.Sprintf("{\"Type\":\"%v\",\"Model\":\"%v\"}", sns_type, sns_model)
-	var tst_key = "sensors:" + tst_id + ":device:" + dvc_key
-
-	ping(t)
-	set(t, tst_key, json)
-
-	var sensors = NewSensors(Db)
-	if err := sensors.Delete(tst_id, dvc_key); err != nil {
-		t.Fatalf("Deletion fail : %v", err)
-	}
-
-	if exists(t, tst_key) {
-		t.Fatal("Key still exists")
-	}
+	return true
 }
 
 func TestSensorComplex(t *testing.T) {
-	var sns_ch = Sensor{Type: "Changed Type", Model: "Changed Model"}
-	var json = fmt.Sprintf("{\"Type\":\"%v\",\"Model\":\"%v\"}", sns_type, sns_model)
+	var snsStart = Sensor{Type: sensorType, Model: sensorModel}
+	var snsChanged = Sensor{Type: "Changed Type", Model: "Changed Model"}
 
-	ping(t)
 	var sensors = NewSensors(Db)
 
-	var id, err = sensors.Add(&Sensor{Type: sns_type, Model: sns_model}, dvc_key)
+	var id, err = sensors.Add(&Sensor{Type: sensorType, Model: sensorModel}, dvcId)
 	if err != nil {
 		t.Fatalf("Addition fail : %v", err)
 	}
 
-	var tst_key = "sensors:" + id + ":device:" + dvc_key
-	var val = get(t, tst_key)
-	assertEqual(t, val, json, "")
-
-	if err := sensors.Update(id, dvc_key, &sns_ch); err != nil {
-		t.Fatalf("Update fail : %v", err)
-	}
-
-	sns, err := sensors.Read(id, dvc_key)
+	sns, err := sensors.Read(id, dvcId)
 	if err != nil {
 		t.Fatalf("Read fail : %v", err)
 	}
-	assertEqual(t, sns, sns_ch, "")
+	assertEqual(t, sns, snsStart, "")
 
-	if err := sensors.Delete(id, dvc_key); err != nil {
+	if err := sensors.Update(id, dvcId, &snsChanged); err != nil {
+		t.Fatalf("Update fail : %v", err)
+	}
+
+	sns, err = sensors.Read(id, dvcId)
+	if err != nil {
+		t.Fatalf("Read fail : %v", err)
+	}
+	assertEqual(t, sns, snsChanged, "")
+
+	if err := sensors.Delete(id, dvcId); err != nil {
 		t.Fatalf("Deletion fail : %v", err)
 	}
 
-	if exists(t, tst_key) {
-		t.Fatal("Key still exists")
+	if _, err := sensors.Read(id, dvcId); err == nil {
+		t.Fatal("Key still exist")
 	}
 }
 
 func TestListSensors(t *testing.T) {
-	var tst_arr []Sensor
-	var json_arr []string
-	var pairs []interface{}
-	for i := 0; i < 5; i += 1 {
-		tst_arr = append(tst_arr, Sensor{
+	var tstArr []Sensor
+	var sensors = NewSensors(Db)
+	var ids []string
+	var num = 5
+	for i := 0; i < num; i += 1 {
+		tstArr = append(tstArr, Sensor{
 			fmt.Sprintf("type%v", i+1),
 			fmt.Sprintf("model%v", i+1),
 		})
-		var val, _ = json.Marshal(tst_arr[i])
-		json_arr = append(json_arr, string(val))
-
-		pairs = append(pairs,
-			fmt.Sprintf("sensors:test%v:device:%v", i+1, dvc_key),
-			json_arr[i])
+		var id, err = sensors.Add(&tstArr[i], dvcId)
+		if err != nil {
+			t.Fatalf("Failed Add Sensor : %v", err)
+		}
+		ids = append(ids, id)
 	}
 
-	if err := Db.cli.MSet(pairs...).Err(); err != nil {
-		t.Fatalf("Failed set : %v", err)
-	}
-
-	var sensors = NewSensors(Db)
-	var keys, arr, err = sensors.ListByDevice(dvc_key)
+	var retIds, arr, err = sensors.ListByDevice(dvcId)
 	if err != nil {
 		t.Fatalf("Failed List : %v", err)
 	}
@@ -158,21 +85,21 @@ func TestListSensors(t *testing.T) {
 	sort.Slice(arr, func(i, j int) bool {
 		return arr[i].Type < arr[j].Type
 	})
-	sort.Strings(keys)
+	sort.Strings(retIds)
+	sort.Strings(ids)
 
-	for i := range arr {
-		var get_result, _ = sensors.Read(keys[i], dvc_key)
-		assertEqual(t, get_result, tst_arr[i],
-			fmt.Sprintf("Key and value do not correspond for key %v", keys[i]))
-		assertEqual(t, arr[i], tst_arr[i],
-			fmt.Sprintf("Elements %v are not equal\n%v != %v",
-				i, arr[i], tst_arr[i]))
+	if !compareSlices(retIds, ids) {
+		t.Fatal("Initial and returned ids are not equal")
 	}
 
-	for i := range tst_arr {
-		if err = Db.cli.Del(
-			fmt.Sprintf("sensors:test%v:device:%v",
-				i+1, dvc_key)).Err(); err != nil {
+	for i := range arr {
+		assertEqual(t, arr[i], tstArr[i],
+			fmt.Sprintf("Elements %v are not equal\n%v != %v",
+				i, arr[i], tstArr[i]))
+	}
+
+	for _, id := range ids {
+		if err := sensors.Delete(id, dvcId); err != nil {
 			t.Fatalf("Deletion fail : %v", err)
 		}
 	}
