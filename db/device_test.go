@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -42,5 +43,40 @@ func TestDeviceComplex(t *testing.T) {
 
 	if _, err = devices.Read(id); err == nil {
 		t.Fatal("Key still exists")
+	}
+}
+
+func TestListDevices(t *testing.T) {
+	var num = 5
+	var tstArr = make([]Device, num)
+	var ids = make([]string, num)
+	var devices = NewDevices(Db)
+	for i := 0; i < num; i++ {
+		tstArr[i] = Device{
+			fmt.Sprintf("name%v", i+1),
+			fmt.Sprintf("model%v", i+1),
+		}
+		var id, err = devices.Add(&tstArr[i])
+		if err != nil {
+			t.Fatalf("Failed Add Device : %v", err)
+		}
+		ids[i] = id
+	}
+
+	var retMap, err = devices.List()
+	if err != nil {
+		t.Fatalf("Failed List : %v", err)
+	}
+	for _, id := range ids {
+		if _, exists := retMap[id]; !exists {
+			t.Fail()
+			t.Logf("Couldn't get key %v", id)
+		}
+	}
+
+	for _, id := range ids {
+		if err := devices.Delete(id); err != nil {
+			t.Fatalf("Deletion fail : %v", err)
+		}
 	}
 }

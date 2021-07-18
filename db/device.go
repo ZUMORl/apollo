@@ -19,7 +19,7 @@ type (
 		Read(string) (Device, error)
 		Update(string, *Device) error
 		Delete(string) error
-		List() ([]string, []Device, error)
+		List() (map[string]Device, error)
 	}
 
 	devicesManager struct {
@@ -64,28 +64,26 @@ func (dm *devicesManager) Delete(key string) error {
 	return dm.db.cli.Del("devices:" + key).Err()
 }
 
-func (dm *devicesManager) List() ([]string, []Device, error) {
+func (dm *devicesManager) List() (map[string]Device, error) {
 	var keys, _, err = dm.db.cli.Scan(0, "devices:*", 0).Result()
 	if err != nil {
-		return []string{}, []Device{}, err
+		return map[string]Device{}, err
 	}
 	arr, err := dm.db.cli.MGet(keys...).Result()
 	if err != nil {
-		return []string{}, []Device{}, err
+		return map[string]Device{}, err
 	}
 
-	var devices []Device
-	var ids []string
+	var ret = map[string]Device{}
 
 	for i, elem := range arr {
 		var dvc Device
 		err = json.Unmarshal([]byte(elem.(string)), &dvc)
 		if err != nil {
-			return ids, devices, err
+			return ret, err
 		}
 
-		ids = append(ids, strings.Split(keys[i], ":")[1])
-		devices = append(devices, dvc)
+		ret[strings.Split(keys[i], ":")[1]] = dvc
 	}
-	return ids, devices, err
+	return ret, err
 }

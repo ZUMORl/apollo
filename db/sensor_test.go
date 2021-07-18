@@ -61,41 +61,38 @@ func TestSensorComplex(t *testing.T) {
 }
 
 func TestListSensors(t *testing.T) {
-	var tstArr []Sensor
-	var sensors = NewSensors(Db)
-	var ids []string
 	var num = 5
-	for i := 0; i < num; i += 1 {
-		tstArr = append(tstArr, Sensor{
+	var tstArr = make([]Sensor, num)
+	var ids = make([]string, num)
+	var sensors = NewSensors(Db)
+	for i := 0; i < num; i++ {
+		tstArr[i] = Sensor{
 			fmt.Sprintf("type%v", i+1),
 			fmt.Sprintf("model%v", i+1),
-		})
+		}
 		var id, err = sensors.Add(&tstArr[i], dvcId)
 		if err != nil {
 			t.Fatalf("Failed Add Sensor : %v", err)
 		}
-		ids = append(ids, id)
+		ids[i] = id
 	}
 
-	var retIds, arr, err = sensors.ListByDevice(dvcId)
+	var retMap, err = sensors.ListByDevice(dvcId)
 	if err != nil {
 		t.Fatalf("Failed List : %v", err)
 	}
 
-	sort.Slice(arr, func(i, j int) bool {
-		return arr[i].Type < arr[j].Type
-	})
+	var retIds = make([]string, len(retMap))
+	var i = 0
+	for id := range retMap {
+		retIds[i] = id
+		i++
+	}
 	sort.Strings(retIds)
 	sort.Strings(ids)
 
 	if !compareSlices(retIds, ids) {
 		t.Fatal("Initial and returned ids are not equal")
-	}
-
-	for i := range arr {
-		assertEqual(t, arr[i], tstArr[i],
-			fmt.Sprintf("Elements %v are not equal\n%v != %v",
-				i, arr[i], tstArr[i]))
 	}
 
 	for _, id := range ids {

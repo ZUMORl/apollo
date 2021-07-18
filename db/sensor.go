@@ -19,7 +19,7 @@ type (
 		Read(string, string) (Sensor, error)
 		Update(string, string, *Sensor) error
 		Delete(string, string) error
-		ListByDevice(string) ([]string, []Sensor, error)
+		ListByDevice(string) (map[string]Sensor, error)
 	}
 
 	sensorManager struct {
@@ -66,28 +66,26 @@ func (sm *sensorManager) Delete(key, dvc string) error {
 	return sm.db.cli.Del(fmt.Sprintf("sensors:%v:device:%v", key, dvc)).Err()
 }
 
-func (sm *sensorManager) ListByDevice(dvc string) ([]string, []Sensor, error) {
+func (sm *sensorManager) ListByDevice(dvc string) (map[string]Sensor, error) {
 	var keys, _, err = sm.db.cli.Scan(0, "sensors:*:device:"+dvc, 0).Result()
 	if err != nil {
-		return []string{}, []Sensor{}, err
+		return map[string]Sensor{}, err
 	}
 	arr, err := sm.db.cli.MGet(keys...).Result()
 	if err != nil {
-		return []string{}, []Sensor{}, err
+		return map[string]Sensor{}, err
 	}
 
-	var sensors []Sensor
-	var ids []string
+	var ret = map[string]Sensor{}
 
 	for i, elem := range arr {
 		var sns Sensor
 		err = json.Unmarshal([]byte(elem.(string)), &sns)
 		if err != nil {
-			return ids, sensors, err
+			return ret, err
 		}
 
-		ids = append(ids, strings.Split(keys[i], ":")[1])
-		sensors = append(sensors, sns)
+		ret[strings.Split(keys[i], ":")[1]] = sns
 	}
-	return ids, sensors, err
+	return ret, err
 }
