@@ -90,7 +90,7 @@ func (sm *sensorManager) Delete(id string) error {
 
 func (sm *sensorManager) ListByDevice(dvc string) (map[string]Sensor, error) {
 	var keys, _, err = sm.db.cli.Scan(0, "sensors:*:device:"+dvc, 0).Result()
-	if err != nil {
+	if err != nil || len(keys) == 0 {
 		return map[string]Sensor{}, err
 	}
 	arr, err := sm.db.cli.MGet(keys...).Result()
