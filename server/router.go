@@ -34,16 +34,16 @@ func Serve() {
 	// Routes for DEVICES
 	srv.GET("/devices/", readDevices)
 	srv.POST("/devices/", newDevice)
-	srv.GET("/devices/:d_id", readDevice)
-	srv.PUT("/devices/:d_id", updateDevice)
-	srv.DELETE("/devices/:d_id", deleteDevice)
+	srv.GET("/devices/:d_id/", readDevice)
+	srv.PUT("/devices/:d_id/", updateDevice)
+	srv.DELETE("/devices/:d_id/", deleteDevice)
 
 	// Routes for SENSORS
-	srv.GET("/device/:d_id/sensors/", readSensors)
-	srv.POST("/device/:d_id/sensors/", newSensor)
-	srv.GET("/device/:d_id/sensors/:s_id", readSensor)
-	srv.PUT("/device/:d_id/sensors/:s_id", updateSensor)
-	srv.DELETE("/device/:d_id/sensors/:s_id", deleteSensor)
+	srv.GET("/devices/:d_id/sensors/", readSensors)
+	srv.POST("/devices/:d_id/sensors/", newSensor)
+	srv.GET("/devices/:d_id/sensors/:s_id/", readSensor)
+	srv.PUT("/devices/:d_id/sensors/:s_id/", updateSensor)
+	srv.DELETE("/devices/:d_id/sensors/:s_id/", deleteSensor)
 
 	srv.Logger.Fatal(srv.Start(":1323"))
 }

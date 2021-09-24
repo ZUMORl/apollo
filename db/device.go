@@ -10,8 +10,8 @@ import (
 
 type (
 	Device struct {
-		Name  string
-		Model string
+		Name  string `json:"name"`
+		Model string `json:"model"`
 	}
 
 	Devices interface {

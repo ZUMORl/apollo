@@ -11,8 +11,8 @@ import (
 
 type (
 	Sensor struct {
-		Type  string
-		Model string
+		Type  string `json:"type"`
+		Model string `json:"model"`
 	}
 
 	Sensors interface {
