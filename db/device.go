@@ -10,8 +10,8 @@ import (
 
 type (
 	Device struct {
-		Name  string
-		Model string
+		Name  string `json:"name"`
+		Model string `json:"model"`
 	}
 
 	Devices interface {
@@ -66,7 +66,7 @@ func (dm *devicesManager) Delete(key string) error {
 
 func (dm *devicesManager) List() (map[string]Device, error) {
 	var keys, _, err = dm.db.cli.Scan(0, "devices:*", 0).Result()
-	if err != nil {
+	if err != nil || len(keys) == 0 {
 		return map[string]Device{}, err
 	}
 	arr, err := dm.db.cli.MGet(keys...).Result()
