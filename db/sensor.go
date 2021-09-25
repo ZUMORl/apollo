@@ -20,6 +20,9 @@ type (
 		Read(string) (Sensor, error)
 		Update(string, *Sensor) error
 		Delete(string) error
+		AddValue(string, string) error
+		RemoveValue(string, int, int) error
+		GetValues(string, int, int) ([]string, error)
 		ListByDevice(string) (map[string]Sensor, error)
 	}
 
@@ -110,4 +113,30 @@ func (sm *sensorManager) ListByDevice(dvc string) (map[string]Sensor, error) {
 		ret[strings.Split(keys[i], ":")[1]] = sns
 	}
 	return ret, err
+}
+
+func (sm *sensorManager) AddValue(id string, value string) error {
+	var key, err = getFullKey(id, sm)
+	if err != nil {
+		return err
+	}
+
+	return sm.db.cli.LPush("values:"+key, value).Err()
+}
+
+func (sm *sensorManager) RemoveValue(id string, start int, end int) error {
+	var key, err = getFullKey(id, sm)
+	if err != nil {
+		return err
+	}
+	return sm.db.cli.LTrim(key, int64(start), int64(end)).Err()
+}
+
+func (sm *sensorManager) GetValues(id string, start int, end int) ([]string, error) {
+	var key, err = getFullKey(id, sm)
+	if err != nil {
+		return []string{}, err
+	}
+
+	return sm.db.cli.LRange(key, int64(start), int64(end)).Result()
 }
