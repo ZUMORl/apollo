@@ -45,5 +45,10 @@ func Serve() {
 	srv.PUT("/devices/:d_id/sensors/:s_id/", updateSensor)
 	srv.DELETE("/devices/:d_id/sensors/:s_id/", deleteSensor)
 
+	// Routes for VALUES
+	srv.GET("/devices/:d_id/sensors/:s_id/values", getValues)
+	srv.DELETE("/devices/:d_id/sensors/:s_id/values", deleteValues)
+	srv.POST("/devices/:d_id/sensors/:s_id/values", newValue)
+
 	srv.Logger.Fatal(srv.Start(":1323"))
 }
