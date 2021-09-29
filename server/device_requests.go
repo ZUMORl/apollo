@@ -11,15 +11,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func internalErr(c echo.Context, err error, name string, description string) error {
-	return c.JSON(http.StatusInternalServerError,
-		ServerError{
-			err.Error(),
-			name,
-			description,
-		})
-}
-
 // srv.GET("/devices/", readDevices)
 func readDevices(c echo.Context) error {
 	var devices, err = device.List()
@@ -132,7 +123,7 @@ func updateDevice(c echo.Context) error {
 			})
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.NoContent(http.StatusOK)
 }
 
 // srv.DELETE("/devices/:d_id/", deleteDevice)
@@ -148,5 +139,5 @@ func deleteDevice(c echo.Context) error {
 			})
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.NoContent(http.StatusOK)
 }

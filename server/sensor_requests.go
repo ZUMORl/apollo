@@ -131,7 +131,7 @@ func updateSensor(c echo.Context) error {
 			})
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.NoContent(http.StatusOK)
 }
 
 // srv.DELETE("/devices/:d_id/sensors/:s_id/, deleteSensor)
@@ -148,5 +148,5 @@ func deleteSensor(c echo.Context) error {
 			})
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.NoContent(http.StatusOK)
 }
