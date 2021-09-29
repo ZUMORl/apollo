@@ -147,7 +147,7 @@ func (sm *sensorManager) GetValues(id string, start int, end int) ([]Value, erro
 		return []Value{}, err
 	}
 
-	values, err := sm.db.cli.LRange(key, int64(start), int64(end)).Result()
+	values, err := sm.db.cli.LRange("values:"+key, int64(start), int64(end)).Result()
 	if err != nil {
 		return []Value{}, err
 	}
