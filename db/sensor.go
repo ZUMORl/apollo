@@ -15,14 +15,19 @@ type (
 		Model string `json:"model"`
 	}
 
+	Value struct {
+		Val       string `json:"value"`
+		Timestamp string `json:"time"`
+	}
+
 	Sensors interface {
 		Add(*Sensor, string) (string, error)
 		Read(string) (Sensor, error)
 		Update(string, *Sensor) error
 		Delete(string) error
-		AddValue(string, string) error
+		AddValue(string, *Value) error
 		RemoveValue(string, int, int) error
-		GetValues(string, int, int) ([]string, error)
+		GetValues(string, int, int) ([]Value, error)
 		ListByDevice(string) (map[string]Sensor, error)
 	}
 
@@ -115,13 +120,17 @@ func (sm *sensorManager) ListByDevice(dvc string) (map[string]Sensor, error) {
 	return ret, err
 }
 
-func (sm *sensorManager) AddValue(id string, value string) error {
+func (sm *sensorManager) AddValue(id string, value *Value) error {
 	var key, err = getFullKey(id, sm)
 	if err != nil {
 		return err
 	}
+	json, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
 
-	return sm.db.cli.LPush("values:"+key, value).Err()
+	return sm.db.cli.LPush("values:"+key, json).Err()
 }
 
 func (sm *sensorManager) RemoveValue(id string, start int, end int) error {
@@ -132,11 +141,23 @@ func (sm *sensorManager) RemoveValue(id string, start int, end int) error {
 	return sm.db.cli.LTrim(key, int64(start), int64(end)).Err()
 }
 
-func (sm *sensorManager) GetValues(id string, start int, end int) ([]string, error) {
+func (sm *sensorManager) GetValues(id string, start int, end int) ([]Value, error) {
 	var key, err = getFullKey(id, sm)
 	if err != nil {
-		return []string{}, err
+		return []Value{}, err
 	}
 
-	return sm.db.cli.LRange(key, int64(start), int64(end)).Result()
+	values, err := sm.db.cli.LRange(key, int64(start), int64(end)).Result()
+	if err != nil {
+		return []Value{}, err
+	}
+
+	var ret = make([]Value, len(values))
+	for i, val := range values {
+		err = json.Unmarshal([]byte(val), &ret[i])
+		if err != nil {
+			return []Value{}, err
+		}
+	}
+	return ret, err
 }
