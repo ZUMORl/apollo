@@ -99,11 +99,11 @@ func (sm *sensorManager) Delete(id string) error {
 func (sm *sensorManager) ListByDevice(dvc string) (map[string]Sensor, error) {
 	var keys, _, err = sm.db.cli.Scan(0, "sensors:*:device:"+dvc, 0).Result()
 	if err != nil || len(keys) == 0 {
-		return map[string]Sensor{}, err
+		return nil, err
 	}
 	arr, err := sm.db.cli.MGet(keys...).Result()
 	if err != nil {
-		return map[string]Sensor{}, err
+		return nil, err
 	}
 
 	var ret = map[string]Sensor{}
@@ -112,7 +112,7 @@ func (sm *sensorManager) ListByDevice(dvc string) (map[string]Sensor, error) {
 		var sns Sensor
 		err = json.Unmarshal([]byte(elem.(string)), &sns)
 		if err != nil {
-			return ret, err
+			return nil, err
 		}
 
 		ret[strings.Split(keys[i], ":")[1]] = sns
@@ -144,19 +144,19 @@ func (sm *sensorManager) RemoveValue(id string, start int, end int) error {
 func (sm *sensorManager) GetValues(id string, start int, end int) ([]Value, error) {
 	var key, err = getFullKey(id, sm)
 	if err != nil {
-		return []Value{}, err
+		return nil, err
 	}
 
 	values, err := sm.db.cli.LRange("values:"+key, int64(start), int64(end)).Result()
 	if err != nil {
-		return []Value{}, err
+		return nil, err
 	}
 
 	var ret = make([]Value, len(values))
 	for i, val := range values {
 		err = json.Unmarshal([]byte(val), &ret[i])
 		if err != nil {
-			return []Value{}, err
+			return nil, err
 		}
 	}
 	return ret, err
