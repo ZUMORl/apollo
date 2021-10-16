@@ -36,7 +36,7 @@ type (
 	}
 )
 
-func getFullKey(id string, sm *sensorManager) (string, error) {
+func (sm *sensorManager) getFullKey(id string) (string, error) {
 	var keys, _, err = sm.db.cli.Scan(0, "sensors:"+id+"*", 0).Result()
 	if err != nil {
 		return "", err
@@ -63,7 +63,7 @@ func (sm *sensorManager) Add(sns *Sensor, dvc string) (string, error) {
 }
 
 func (sm *sensorManager) Read(id string) (sns Sensor, err error) {
-	key, err := getFullKey(id, sm)
+	key, err := sm.getFullKey(id)
 	if err != nil {
 		return Sensor{}, err
 	}
@@ -81,7 +81,7 @@ func (sm *sensorManager) Update(id string, sns *Sensor) error {
 	if err != nil {
 		return err
 	}
-	key, err := getFullKey(id, sm)
+	key, err := sm.getFullKey(id)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (sm *sensorManager) Update(id string, sns *Sensor) error {
 }
 
 func (sm *sensorManager) Delete(id string) error {
-	key, err := getFullKey(id, sm)
+	key, err := sm.getFullKey(id)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (sm *sensorManager) ListByDevice(dvc string) (map[string]Sensor, error) {
 }
 
 func (sm *sensorManager) AddValue(id string, value *Value) error {
-	var key, err = getFullKey(id, sm)
+	var key, err = sm.getFullKey(id)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (sm *sensorManager) AddValue(id string, value *Value) error {
 }
 
 func (sm *sensorManager) RemoveValue(id string, start int, end int) error {
-	var key, err = getFullKey(id, sm)
+	var key, err = sm.getFullKey(id)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (sm *sensorManager) RemoveValue(id string, start int, end int) error {
 }
 
 func (sm *sensorManager) GetValues(id string, start int, end int) ([]Value, error) {
-	var key, err = getFullKey(id, sm)
+	var key, err = sm.getFullKey(id)
 	if err != nil {
 		return nil, err
 	}
