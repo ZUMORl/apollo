@@ -35,7 +35,7 @@ func readDevice(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				fmt.Sprintf("GET /devices%v", id),
+				fmt.Sprintf("GET /devices/%v", id),
 				"",
 			})
 	}
