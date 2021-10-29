@@ -138,7 +138,7 @@ func (sm *sensorManager) RemoveValue(id string, start int, end int) error {
 	if err != nil {
 		return err
 	}
-	return sm.db.cli.LTrim(key, int64(start), int64(end)).Err()
+	return sm.db.cli.LTrim("values:" + key, int64(start), int64(end)).Err()
 }
 
 func (sm *sensorManager) GetValues(id string, start int, end int) ([]Value, error) {
