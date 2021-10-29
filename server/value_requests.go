@@ -2,7 +2,7 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -11,14 +11,24 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func compoundErrors(err_list []error) error {
+	var str = ""
+	for _, err := range err_list {
+		if err != nil {
+			str += err.Error() + ", "
+		}
+	}
+	return errors.New(str)
+}
+
 // srv.GET("/devices/:d_id/sensors/:s_id/values", getValues)
 func getValues(c echo.Context) error {
 	var start, err = strconv.Atoi(c.QueryParam("start"))
 	var end, err_1 = strconv.Atoi(c.QueryParam("end"))
 	if err != nil || err_1 != nil {
-		return c.JSON(http.StatusBadRequest,
-			fmt.Sprintf("Wrong headers values : %s, %s",
-				c.QueryParam("start"), c.QueryParam("end")))
+		return &echo.HTTPError{Code: http.StatusBadRequest,
+			Message:  "Wrong query parameters",
+			Internal: compoundErrors([]error{err, err_1})}
 	}
 
 	values, err := sensor.GetValues(c.Param("s_id"), start, end)
@@ -35,9 +45,9 @@ func deleteValues(c echo.Context) error {
 	var start, err = strconv.Atoi(c.QueryParam("start"))
 	var end, err_1 = strconv.Atoi(c.QueryParam("end"))
 	if err != nil || err_1 != nil {
-		return c.JSON(http.StatusBadRequest,
-			fmt.Sprintf("Wrong headers values : %s, %s",
-				c.QueryParam("start"), c.QueryParam("end")))
+		return &echo.HTTPError{Code: http.StatusBadRequest,
+			Message:  "Wrong query parameters",
+			Internal: compoundErrors([]error{err, err_1})}
 	}
 	if err := sensor.RemoveValue(c.Param("s_id"), start, end); err != nil {
 		return &echo.HTTPError{Code: http.StatusInternalServerError,
