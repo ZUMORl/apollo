@@ -11,7 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// srv.GET("/devices/:d_id/sensors/", readSensors)
+// srv.GET("/devices/:d_id/sensors", readSensors)
 func readSensors(c echo.Context) error {
 	var dvc_id = c.Param("d_id")
 
@@ -20,7 +20,7 @@ func readSensors(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				fmt.Sprintf("GET /device/%v/sensors/", c.Param("d_id")),
+				fmt.Sprintf("GET /device/%v/sensors", c.Param("d_id")),
 				"",
 			})
 	}
@@ -28,7 +28,7 @@ func readSensors(c echo.Context) error {
 	return c.JSON(http.StatusOK, sensors)
 }
 
-// srv.GET("/devices/:d_id/sensors/:s_id/", readSensor)
+// srv.GET("/devices/:d_id/sensors/:s_id", readSensor)
 func readSensor(c echo.Context) error {
 	var id = c.Param("s_id")
 
@@ -46,7 +46,7 @@ func readSensor(c echo.Context) error {
 	return c.JSON(http.StatusOK, sns)
 }
 
-// srv.POST("/devices/:d_id/sensors/", newSensor)
+// srv.POST("/devices/:d_id/sensors", newSensor)
 func newSensor(c echo.Context) error {
 	var req = c.Request()
 	if req.Header["Content-Type"][0] != "application/json" {
@@ -61,7 +61,7 @@ func newSensor(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				fmt.Sprintf("POST /devices/%v/sensors/", c.Param("d_id")),
+				fmt.Sprintf("POST /devices/%v/sensors", c.Param("d_id")),
 				"",
 			})
 	}
@@ -70,7 +70,7 @@ func newSensor(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				fmt.Sprintf("POST /devices/%v/sensors/", c.Param("d_id")),
+				fmt.Sprintf("POST /devices/%v/sensors", c.Param("d_id")),
 				"Incorrect json data. Could not decrypt.",
 			})
 	}
@@ -80,7 +80,7 @@ func newSensor(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				fmt.Sprintf("POST /device/%v/sensors/",
+				fmt.Sprintf("POST /device/%v/sensors",
 					c.Param("d_id")),
 				"",
 			})
@@ -89,7 +89,7 @@ func newSensor(c echo.Context) error {
 	return c.JSON(http.StatusOK, key)
 }
 
-// srv.PUT("/devices/:d_id/sensors/:s_id/", updateSensor)
+// srv.PUT("/devices/:d_id/sensors/:s_id", updateSensor)
 func updateSensor(c echo.Context) error {
 	var req = c.Request()
 	if req.Header["Content-Type"][0] != "application/json" {
@@ -131,10 +131,10 @@ func updateSensor(c echo.Context) error {
 			})
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.NoContent(http.StatusOK)
 }
 
-// srv.DELETE("/devices/:d_id/sensors/:s_id/, deleteSensor)
+// srv.DELETE("/devices/:d_id/sensors/:s_id, deleteSensor)
 func deleteSensor(c echo.Context) error {
 	var id = c.Param("s_id")
 
@@ -148,5 +148,5 @@ func deleteSensor(c echo.Context) error {
 			})
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.NoContent(http.StatusOK)
 }

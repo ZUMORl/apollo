@@ -11,23 +11,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func internalErr(c echo.Context, err error, name string, description string) error {
-	return c.JSON(http.StatusInternalServerError,
-		ServerError{
-			err.Error(),
-			name,
-			description,
-		})
-}
-
-// srv.GET("/devices/", readDevices)
+// srv.GET("/devices", readDevices)
 func readDevices(c echo.Context) error {
 	var devices, err = device.List()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				"GET /devices/",
+				"GET /devices",
 				"",
 			})
 	}
@@ -35,7 +26,7 @@ func readDevices(c echo.Context) error {
 	return c.JSON(http.StatusOK, devices)
 }
 
-// srv.GET("/devices/:d_id/", readDevice)
+// srv.GET("/devices/:d_id", readDevice)
 func readDevice(c echo.Context) error {
 	var id = c.Param("d_id")
 
@@ -52,7 +43,7 @@ func readDevice(c echo.Context) error {
 	return c.JSON(http.StatusOK, dvc)
 }
 
-// srv.POST("/devices/", newDevice)
+// srv.POST("/devices", newDevice)
 func newDevice(c echo.Context) error {
 	var req = c.Request()
 	if req.Header["Content-Type"][0] != "application/json" {
@@ -67,7 +58,7 @@ func newDevice(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				"POST /devices/",
+				"POST /devices",
 				"",
 			})
 	}
@@ -76,7 +67,7 @@ func newDevice(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				"POST /devices/",
+				"POST /devices",
 				"Incorrect json data. Could not decrypt.",
 			})
 	}
@@ -86,14 +77,14 @@ func newDevice(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				"POST /devices/",
+				"POST /devices",
 				"",
 			})
 	}
 	return c.JSON(http.StatusOK, key)
 }
 
-// srv.PUT("/devices/:d_id/", updateDevice)
+// srv.PUT("/devices/:d_id", updateDevice)
 func updateDevice(c echo.Context) error {
 	var req = c.Request()
 	var id = c.Param("d_id")
@@ -109,7 +100,7 @@ func updateDevice(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				fmt.Sprintf("PUT /devices/%v/", id),
+				fmt.Sprintf("PUT /devices/%v", id),
 				"",
 			})
 	}
@@ -118,7 +109,7 @@ func updateDevice(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError,
 			ServerError{
 				err.Error(),
-				fmt.Sprintf("PUT /devices/%v/", id),
+				fmt.Sprintf("PUT /devices/%v", id),
 				"Incorrect json data. Could not decrypt.",
 			})
 	}
@@ -132,10 +123,10 @@ func updateDevice(c echo.Context) error {
 			})
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.NoContent(http.StatusOK)
 }
 
-// srv.DELETE("/devices/:d_id/", deleteDevice)
+// srv.DELETE("/devices/:d_id", deleteDevice)
 func deleteDevice(c echo.Context) error {
 	var id = c.Param("d_id")
 
@@ -148,5 +139,5 @@ func deleteDevice(c echo.Context) error {
 			})
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.NoContent(http.StatusOK)
 }

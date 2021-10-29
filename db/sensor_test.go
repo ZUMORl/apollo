@@ -2,8 +2,10 @@ package db
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"testing"
+	"time"
 )
 
 const (
@@ -99,5 +101,45 @@ func TestListSensors(t *testing.T) {
 		if err := sensors.Delete(id); err != nil {
 			t.Fatalf("Deletion fail : %v", err)
 		}
+	}
+}
+
+func TestValuesComplex(t *testing.T) {
+	var sensors = NewSensors(Db)
+	var snsTest = &Sensor{Type: "Test", Model: "Test-v1"}
+	var id, err = sensors.Add(snsTest, dvcId)
+	if err != nil {
+		t.Fatalf("Add sensor fail : %v", err)
+	}
+	var timeformat = "15:04:05 02.01.2006"
+
+	var testValues = []Value{
+		Value{Val: "test1", Timestamp: time.Now().Format(timeformat)},
+		Value{Val: "test2", Timestamp: (time.Now().Add(time.Second)).Format(timeformat)},
+		Value{Val: "test2", Timestamp: (time.Now().Add(time.Second * 5)).Format(timeformat)},
+	}
+	for _, testVal := range testValues {
+		if err := sensors.AddValue(id, &testVal); err != nil {
+			t.Fatalf("Add fail : %v", err)
+		}
+	}
+
+	retVals, err := sensors.GetValues(id, 0, -1)
+	if err != nil {
+		t.Fatalf("Get fail : %v", err)
+	}
+
+	testValues[0], testValues[2] = testValues[2], testValues[0]
+	if reflect.DeepEqual(retVals, testValues) != true {
+		t.Fail()
+		t.Logf("Got wrong values")
+	}
+
+	if err = sensors.Delete(id); err != nil {
+		t.Fatalf("Clean up fail : %v", err)
+	}
+
+	if err = Db.cli.Del("values:sensors:" + id + ":device:" + dvcId).Err(); err != nil {
+		t.Fatalf("Clean up fail : %v", err)
 	}
 }

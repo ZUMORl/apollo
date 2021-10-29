@@ -67,11 +67,11 @@ func (dm *devicesManager) Delete(key string) error {
 func (dm *devicesManager) List() (map[string]Device, error) {
 	var keys, _, err = dm.db.cli.Scan(0, "devices:*", 0).Result()
 	if err != nil || len(keys) == 0 {
-		return map[string]Device{}, err
+		return nil, err
 	}
 	arr, err := dm.db.cli.MGet(keys...).Result()
 	if err != nil {
-		return map[string]Device{}, err
+		return nil, err
 	}
 
 	var ret = map[string]Device{}
@@ -80,7 +80,7 @@ func (dm *devicesManager) List() (map[string]Device, error) {
 		var dvc Device
 		err = json.Unmarshal([]byte(elem.(string)), &dvc)
 		if err != nil {
-			return ret, err
+			return nil, err
 		}
 
 		ret[strings.Split(keys[i], ":")[1]] = dvc
