@@ -17,12 +17,9 @@ func readSensors(c echo.Context) error {
 
 	var sensors, err = sensor.ListByDevice(dvc_id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("GET /device/%v/sensors", c.Param("d_id")),
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not read Sensor information",
+			Internal: err}
 	}
 
 	return c.JSON(http.StatusOK, sensors)
@@ -34,13 +31,9 @@ func readSensor(c echo.Context) error {
 
 	var sns, err = sensor.Read(id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("GET /device/%v/sensors/%v",
-					c.Param("d_id"), c.Param("s_id")),
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not read Sensor information",
+			Internal: err}
 	}
 
 	return c.JSON(http.StatusOK, sns)
@@ -50,42 +43,31 @@ func readSensor(c echo.Context) error {
 func newSensor(c echo.Context) error {
 	var req = c.Request()
 	if req.Header["Content-Type"][0] != "application/json" {
-		return c.JSON(http.StatusBadRequest,
-			fmt.Sprintf("%s is not accepted content type",
-				req.Header["Content-Type"][0]))
+		return &echo.HTTPError{Code: http.StatusBadRequest,
+			Message: fmt.Sprintf("%s is not accepted content type",
+				req.Header["Content-Type"][0])}
 	}
 
 	var newSensor = db.Sensor{}
 	bits, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("POST /devices/%v/sensors", c.Param("d_id")),
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not read request body",
+			Internal: err}
 	}
 
 	if err := json.Unmarshal(bits, &newSensor); err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("POST /devices/%v/sensors", c.Param("d_id")),
-				"Incorrect json data. Could not decrypt.",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Incorrect json data. Could not decrypt.",
+			Internal: err}
 	}
 
 	key, err := sensor.Add(&newSensor, c.Param("d_id"))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("POST /device/%v/sensors",
-					c.Param("d_id")),
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not add sensor to database",
+			Internal: err}
 	}
-
 	return c.JSON(http.StatusOK, key)
 }
 
@@ -93,42 +75,30 @@ func newSensor(c echo.Context) error {
 func updateSensor(c echo.Context) error {
 	var req = c.Request()
 	if req.Header["Content-Type"][0] != "application/json" {
-		return c.JSON(http.StatusBadRequest,
-			fmt.Sprintf("%s is not accepted content type",
-				req.Header["Content-Type"][0]))
+		return &echo.HTTPError{Code: http.StatusBadRequest,
+			Message: fmt.Sprintf("%s is not accepted content type",
+				req.Header["Content-Type"][0])}
 	}
 
 	var updatedSensor = db.Sensor{}
 	bits, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("PUT /device/%v/sensors/%v",
-					c.Param("d_id"), c.Param("s_id")),
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not read request body",
+			Internal: err}
 	}
 
 	if err := json.Unmarshal(bits, &updatedSensor); err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("PUT /device/%v/sensors/%v",
-					c.Param("d_id"), c.Param("s_id")),
-				"Incorrect json data. Could not decrypt.",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Incorrect json data. Could not decrypt.",
+			Internal: err}
 	}
 
 	var id = c.Param("s_id")
 	if err = sensor.Update(id, &updatedSensor); err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("PUT /device/%v/sensors/%v",
-					c.Param("d_id"), c.Param("s_id")),
-				fmt.Sprintf("type: %v, model: %v", updatedSensor.Type, updatedSensor.Model),
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not update sensor in database.",
+			Internal: err}
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -139,13 +109,9 @@ func deleteSensor(c echo.Context) error {
 	var id = c.Param("s_id")
 
 	if err := sensor.Delete(id); err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("DELETE /device/%v/sensors/%v",
-					c.Param("d_id"), c.Param("s_id")),
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not delete sensor in database.",
+			Internal: err}
 	}
 
 	return c.NoContent(http.StatusOK)

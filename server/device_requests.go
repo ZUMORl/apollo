@@ -15,12 +15,9 @@ import (
 func readDevices(c echo.Context) error {
 	var devices, err = device.List()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				"GET /devices",
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not read devices information.",
+			Internal: err}
 	}
 
 	return c.JSON(http.StatusOK, devices)
@@ -32,12 +29,9 @@ func readDevice(c echo.Context) error {
 
 	var dvc, err = device.Read(id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("GET /devices/%v", id),
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not read device information.",
+			Internal: err}
 	}
 
 	return c.JSON(http.StatusOK, dvc)
@@ -47,39 +41,30 @@ func readDevice(c echo.Context) error {
 func newDevice(c echo.Context) error {
 	var req = c.Request()
 	if req.Header["Content-Type"][0] != "application/json" {
-		return c.JSON(http.StatusBadRequest,
-			fmt.Sprintf("%s is not accepted content type",
-				req.Header["Content-Type"][0]))
+		return &echo.HTTPError{Code: http.StatusBadRequest,
+			Message: fmt.Sprintf("%s is not accepted content type",
+				req.Header["Content-Type"][0])}
 	}
 
 	var newDevice = db.Device{}
 	bits, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				"POST /devices",
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not read request body",
+			Internal: err}
 	}
 
 	if err := json.Unmarshal(bits, &newDevice); err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				"POST /devices",
-				"Incorrect json data. Could not decrypt.",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Incorrect json data. Could not decrypt.",
+			Internal: err}
 	}
 
 	key, err := device.Add(&newDevice)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				"POST /devices",
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not add device to database.",
+			Internal: err}
 	}
 	return c.JSON(http.StatusOK, key)
 }
@@ -89,38 +74,29 @@ func updateDevice(c echo.Context) error {
 	var req = c.Request()
 	var id = c.Param("d_id")
 	if req.Header["Content-Type"][0] != "application/json" {
-		return c.JSON(http.StatusBadRequest,
-			fmt.Sprintf("%s is not accepted content type",
-				req.Header["Content-Type"][0]))
+		return &echo.HTTPError{Code: http.StatusBadRequest,
+			Message: fmt.Sprintf("%s is not accepted content type",
+				req.Header["Content-Type"][0])}
 	}
 
 	var updatedDevice = db.Device{}
 	bits, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("PUT /devices/%v", id),
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not read request body",
+			Internal: err}
 	}
 
 	if err := json.Unmarshal(bits, &updatedDevice); err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("PUT /devices/%v", id),
-				"Incorrect json data. Could not decrypt.",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Incorrect json data. Could not decrypt.",
+			Internal: err}
 	}
 
 	if err = device.Update(id, &updatedDevice); err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("PUT /devices/%v", id),
-				fmt.Sprintf("name: %v, model: %v", updatedDevice.Name, updatedDevice.Model),
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not update device in database.",
+			Internal: err}
 	}
 
 	return c.NoContent(http.StatusOK)
@@ -131,12 +107,9 @@ func deleteDevice(c echo.Context) error {
 	var id = c.Param("d_id")
 
 	if err := device.Delete(id); err != nil {
-		return c.JSON(http.StatusInternalServerError,
-			ServerError{
-				err.Error(),
-				fmt.Sprintf("DELETE /devices/%v", id),
-				"",
-			})
+		return &echo.HTTPError{Code: http.StatusInternalServerError,
+			Message:  "Could not delete device in database.",
+			Internal: err}
 	}
 
 	return c.NoContent(http.StatusOK)
