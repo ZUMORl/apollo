@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/apollo/db"
 
@@ -27,7 +28,7 @@ func home(c echo.Context) error {
 func Serve() {
 	var srv = echo.New()
 	srv.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"http://localhost:3000", "http://91.245.103.229:3000"},
+		AllowOrigins: os.Args[1:],
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 	}))
 
