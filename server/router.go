@@ -6,6 +6,7 @@ import (
 	"github.com/apollo/db"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 var (
@@ -23,8 +24,12 @@ func home(c echo.Context) error {
 	return c.String(http.StatusOK, "hello, world")
 }
 
-func Serve() {
+func Serve(allowedOrigins []string) {
 	var srv = echo.New()
+	srv.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: allowedOrigins,
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	}))
 
 	device = db.NewDevices(db.Db)
 	sensor = db.NewSensors(db.Db)
